@@ -1,0 +1,36 @@
+311 service requests dataset
+List of fields, datatypes and range of values before and after cleaning (where, apart from text case, different from before cleaning)
+
+Complaint_Descriptor	Long	Max length of data: 104
+
+Agency	String	List of possible values: DCA,EDC,DPR,DOT,FDNY,TLC,DEP,DHS,DFTA,NYCEM,DOB,HRA,3-1-1,DSNY,DOF,NYPD,DOHMH,DOE,HPD,DOITT
+
+Complaint_Status	String	List of possible values: Assigned,N/A,Started,Draft,Closed - Testing,Closed,Unassigned,Unspecified,Pending,Open
+
+Resolution_Description	String	Max length of data: 500
+
+BBL	Long	Range of data: 0 - 6066007501
+
+Borough	String	List of possible values: MANHATTAN,BRONX,BROOKLYN,STATEN ISLAND,Unspecified,QUEENS
+
+Latitude	Double	Range of data: 39.5525551788817 - 40.912868795316655
+			Range of data after cleaning: 40.49804421521046 - 40.912868795316655
+
+Y-Coordinate	Long	Range of data: -195555 - 271876
+			Range of data after cleaning: 120826 - 271876
+
+Longitude	Double	Range of data: -78.18450807772693 - -73.70029199533596
+			Range of data after cleaning: -73.70029199533596 - -74.25521082506387
+
+X-Coordinate	Long	Range of data: -195555 - 1067302
+			Range of data after cleaning: 913281 - 1067302
+
+Complaint_Type	String	List of possible values: Noise - House of Worship,Recycling Enforcement,Portable Toilet,APPLIANCE,Building Condition,DRIE,Dead Tree,Stalled Sites,Animal Facility - No Permit,Noise - Residential,Missed Collection (All Materials),Advocate-Business Tax,Highway Condition,Drug Activity,DOF Property - Payment Issue,NONCONST,Construction,Homebound Evacuation 4,Senior Center Complaint,Litter Basket / Request,Interior Demo,Sanitation Condition,Day Care,Adopt-A-Basket,Advocate - Levy,Damaged Tree,Curb Condition,Water System,Traffic,Maintenance or Facility,ELEVATOR,FATF,Legal Services Provider Complaint,Bus Stop Shelter Complaint,Squeegee,Street Sign - Damaged,Unsanitary Pigeon Condition,Noise - Commercial,City Vehicle Placard Complaint,Advocate-Commercial Exemptions,Noise Survey,BEST/Site Safety,For Hire Vehicle Complaint,Illegal Tree Damage,ATF,DOF Property - Reduction Issue,For Hire Vehicle Report,Benefit Card Replacement,Derelict Vehicle,Illegal Parking,Noise,Building/Use,Bus Stop Shelter Placement,Unleashed Dog,Sweeping/Missed,Highway Sign - Missing,Posting Advertisement,Pet Shop,Disorderly Youth,Advocate - Other,Collection Truck Noise,PAINT - PLASTER,Mold,Plumbing,Standpipe - Mechanical,Traffic Signal Condition,Summer Camp,Lifeguard,Water Quality,Non-Residential Heat,Panhandling,LinkNYC,Cooling Tower,Teaching/Learning/Instruction,No Child Left Behind,Miscellaneous Categories,ELECTRIC,MOLD,Smoking,Advocate-Personal Exemptions,Dirty Conditions,Transportation Provider Complaint,Taxi Compliment,GENERAL,Standing Water,Plant,Elevator,Homeless Person Assistance,Drinking Water,DPR Internal,Registration and Transfers,Health,Tanning,Sweeping/Missed-Inadequate,Request Xmas Tree Collection,Bike Rack Condition,GENERAL CONSTRUCTION,Electronics Waste,AGENCY,Street Light Condition,WATER LEAK,Radioactive Material,Public Payphone Complaint,DOOR/WINDOW,Injured Wildlife,HEAT/HOT WATER,Dead/Dying Tree,Water Conservation,Asbestos,SRDE,School Maintenance,Highway Sign - Damaged,UNSANITARY CONDITION,Tattooing,Homeless Encampment,Street Condition,Vending,Unsanitary Animal Facility,Advocate - Lien,FLOORING/STAIRS,Illegal Animal Kept as Pet,Found Property,Unsanitary Animal Pvt Property,Request Large Bulky Item Collection,Special Natural Area District (SNAD),Consumer Complaint,Industrial Waste,Scaffold Safety,Parent Leadership,Hazardous Material,STRUCTURAL,Air Quality,Bridge Condition,Derelict Vehicles,Poison Ivy,Investigations and Discipline (IAD),Root/Sewer/Sidewalk Condition,Food Establishment,Foam Ban Enforcement,VACANT APARTMENT,Trapping Pigeon,Derelict Bicycle,Non-Emergency Police Matter,Street Sign - Dangling,General Construction/Plumbing,Harboring Bees/Wasps,Damaged or Dead Tree,Sweeping/Inadequate,Taxi Complaint,Calorie Labeling,Lead,Broken Parking Meter,Traffic/Illegal Parking,Broken Muni Meter,DOF Literature Request,Highway Sign - Dangling,Illegal Animal - Sold/Kept,Beach/Pool/Sauna Complaint,X-Ray Machine/Equipment,Trans Fat,Sewer,Urinating in Public,Lost Property,Noise - Park,Bottled Water,LEAD,Overgrown Tree/Branches,Special Projects Inspection Team (SPIT),Snow,SAFETY,Noise - Street/Sidewalk,Illegal Animal Sold,SG-99,PAINT/PLASTER,Sidewalk Condition,Vacant Lot,Food Poisoning,Municipal Parking Facility,Public Toilet,Water Maintenance,Forensic Engineering,Asbestos/Garbage Nuisance,OEM Disabled Vehicle,Taxpayer Advocate Inquiry,Graffiti,Cranes and Derricks,Drinking,Boilers,Window Guard,OUTSIDE BUILDING,Taxi Report,Mosquitoes,Noise - Vehicle,Noise - Helicopter,Hazardous Materials,FHE,Overflowing Litter Baskets,PLUMBING,Illegal Fireworks,Animal Abuse,Animal in a Park,Unlicensed Dog,Violation of Park Rules,Bike/Roller/Skate Chronic,Electrical,Safety,Rodent,Discipline and Suspension,Overflowing Recycling Baskets,Indoor Sewage,CST,HEATING,New Tree Request,Blocked Driveway,Street Sign - Missing,Other Enforcement,Emergency Response Team (ERT),CONSTRUCTION,DCA / DOH New License Application Request,Indoor Air Quality,Advocate-UBT,FCST
+
+Unique_Key	Long	Range of data: 10564222 - 39710394
+
+Date_Created	Date	Range of dates: 01/01/2010 01:00:00 AM - 07/12/2018 12:59:28 PM
+			Range of dates after cleaning: 01/01/2010 - 03/31/2018
+
+Date_Closed	Date	Range of dates: 01/01/1900 12:00:00 PM - 03/30/3027 12:00:00 PM
+			Range of dates after cleaning: 01/01/2010 - 03/31/2018

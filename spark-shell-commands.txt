@@ -1,0 +1,71 @@
+//Spark commands to train two negative binomial regression models
+
+import org.apache.spark.ml.regression.GeneralizedLinearRegression
+import org.apache.spark.ml.feature.VectorAssembler
+
+
+//load Hive refined crime and 311 datasets into dataframes
+val rddcrimes = sc.textFile("hdfs:///user/ph1130/rbdaproject/crimesfinaloutput.csv").map(line=>line.split("\\|"))
+case class crimes(Key:String,Complaint_Date:String,Offence_Code:String,Offence_des:String,Offence_Type:String,Place:String,Borough:String,X:Int,Y:Int,Latitude:Float,Longitude:Float,SegmentID:Int)
+val dfcrimes = rddcrimes.map(line=>crimes(line(0),line(1),line(2),line(3),line(4),line(5),line(6),line(7).toInt,line(8).toInt,line(9).toFloat,line(10).toFloat,line(11).toInt)).toDF()
+
+val rdd311 = sc.textFile("hdfs:///user/ph1130/rbdaproject/311finaloutput1.csv").map(line=>line.split("\\|"))
+case class Calls311(Complaint_No:String,Created_Date:String,Closed_Date:String,NoOfDays:String,Agency:String,Complaint_Type:String,Address:String,Status:String,BBL:String,Borough:String,X:Int,Y:Int,Latitude:Float,Longitude:Float,SegmentID1:Int)
+val df311 = rdd311.map(line=>Calls311(line(0),line(1),line(2),line(3),line(4),line(5),line(6),line(7),line(8),line(9),line(10).toInt,line(11).toInt,line(12).toFloat,line(13).toFloat,line(14).toInt)).toDF()
+
+//change date formats to ones that can be queried
+val df311_1 = df311.withColumn("Created_Date",to_date(from_unixtime(unix_timestamp($"Created_Date" ,"yyyy-MM-dd"), "yyyy-MM-dd")))
+val df311_2 = df311_1.withColumn("Closed_Date",to_date(from_unixtime(unix_timestamp($"Closed_Date" ,"yyyy-MM-dd"), "yyyy-MM-dd")))
+val dfcrimes_1 = dfcrimes.withColumn("Complaint_Date",to_date(from_unixtime(unix_timestamp($"Complaint_Date" ,"yyyy-MM-dd"), "yyyy-MM-dd")))
+
+//get crime and 311 data of years we desire for analysis
+val dfcrimes_2017 = dfcrimes_1.filter($"Complaint_Date" > "2017-01-01" and $"Complaint_Date" < "2018-01-01")
+
+val df311_2015 = df311_2.filter($"Created_Date" > "2015-01-01" and $"Created_Date" < "2016-01-01" and $"Status" === "Closed")
+val df311_2016 = df311_2.filter($"Created_Date" > "2016-01-01" and $"Created_Date" < "2017-01-01" and $"Status" === "Closed")
+
+
+//get count of 311 calls and crimes per street segment
+val seg311_2015 = df311_2015.groupBy("SegmentID1").count
+val seg311_2015_1 = seg311_2015.select($"SegmentID1",$"count".alias("Count_311_2015"))
+val seg311_2016 = df311_2016.groupBy("SegmentID1").count
+val seg311_2016_1 = seg311_2016.select($"SegmentID1".alias("SegmentID2"),$"count".alias("Count_311_2016"))
+
+val segcrimes = dfcrimes_2017.groupBy("SegmentID").count
+val segcrimes1 = segcrimes.select($"SegmentID",$"count".alias("Count_crime_2017"))
+
+val dfreg = segcrimes1.join(seg311_2015_1,seg311_2015_1("SegmentID1") === segcrimes1("SegmentID"),"left")
+val dfreg1 = dfreg.join(seg311_2016_1,seg311_2016_1("SegmentID2") === dfreg("SegmentID"),"left")
+val dfreg2 = dfreg1.na.fill(0)
+
+
+//build both the models 
+val assembler = new VectorAssembler().setInputCols(Array("Count_311_2016")).setOutputCol("features_2016")
+val assembler1 = new VectorAssembler().setInputCols(Array("Count_311_2016","Count_311_2015")).setOutputCol("features_bothyears")
+val dfreg3 = assembler.transform(dfreg2)
+val dfreg4 = assembler1.transform(dfreg3)
+
+
+//model with one independent variable - 311 calls of previous year and one dependent variable, crime 
+val glr = new GeneralizedLinearRegression().setFamily("Tweedie").setLinkPower(0).setVariancePower(2).setLabelCol("Count_crime_2017").setFeaturesCol("features_2016").setRegParam(0.3)
+val model = glr.fit(dfreg4)
+
+//print model summary
+val summary = model.summary
+println(s"Intercept: ${model.intercept}")
+println(s"Coefficients: ${model.coefficients}")
+println(s"Coefficient Standard Errors: ${summary.coefficientStandardErrors.mkString(",")}")
+println(s"P Values: ${summary.pValues.mkString(",")}")
+
+
+//model with two independent variables - 311 calls of previous two years and one dependent variable, crime  
+val glr = new GeneralizedLinearRegression().setFamily("Tweedie").setLinkPower(0).setVariancePower(2).setLabelCol("Count_crime_2017").setFeaturesCol("features_bothyears").setRegParam(0.3)
+val model = glr.fit(dfreg4)
+
+
+//print model summary
+val summary = model.summary
+println(s"Intercept: ${model.intercept}")
+println(s"Coefficients: ${model.coefficients}")
+println(s"Coefficient Standard Errors: ${summary.coefficientStandardErrors.mkString(",")}")
+println(s"P Values: ${summary.pValues.mkString(",")}")

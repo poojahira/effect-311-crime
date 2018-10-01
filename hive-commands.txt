@@ -1,0 +1,68 @@
+//Hive commands to further refine datasets, map each crime and 311 call to street segments using Spatial data analysis tools and prepare data for linear regression in Spark MLlib.
+
+!connect jdbc:hive2://babar.es.its.nyu.edu:10000/
+set hive.merge.mapfiles=false;
+set hive.input.format=org.apache.hadoop.hive.ql.io.HiveInputFormat;
+set mapred.map.tasks = 120;
+set mapred.reduce.tasks = 200;
+add jar hdfs:///user/ph1130/spatial-sdk-json-1.1.1-SNAPSHOT.jar;
+add jar hdfs:///user/ph1130/spatial-sdk-hive-1.1.1-SNAPSHOT.jar;
+add jar hdfs:///user/ph1130/esri-geometry-api.jar;
+set hive.cbo.enable=true;
+set hive.compute.query.using.stats=true;
+set hive.stats.fetch.column.stats=true;
+set hive.stats.fetch.partition.stats=true;
+set hive.vectorized.execution.enabled = true;
+set hive.vectorized.execution.reduce.enabled = true;
+create temporary function st_geomfromtext as 'com.esri.hadoop.hive.ST_GeomFromText';
+create temporary function st_geometrytype as 'com.esri.hadoop.hive.ST_GeometryType';
+create temporary function st_distance as 'com.esri.hadoop.hive.ST_Distance';
+create temporary function st_buffer as 'com.esri.hadoop.hive.ST_Buffer';
+
+
+//load mapreduced cleaned up datasets of crime, 311 calls and NYC centerline data
+create external table calls311(Key string,Created_Date string,Closed_Date string,Agency string,Complaint_Type string,Address string,Status string,BBL string,Borough string,X bigint,Y bigint,Latitude double,Longitude double) row format delimited fields terminated by '|';
+LOAD DATA INPATH 'hdfs:///user/ph1130/311out' INTO TABLE calls311;
+
+create external table crimes(Key string,Date string,Offence_Code string,Offence_des string,Offence_Type string,Place string,Borough string,X bigint,Y bigint,Latitude double,Longitude double) row format delimited fields terminated by '|';
+LOAD DATA INPATH 'hdfs:///user/ph1130/crimeout' INTO TABLE crimes;
+
+create external table centerline(SegmentID string,Geometry string,Street string,Shape_leng double) row format delimited fields terminated by '|';
+LOAD DATA INPATH 'hdfs:///user/ph1130/centerout2' INTO TABLE centerline;
+
+create table crimes5 as select key,TO_DATE(from_unixtime(UNIX_TIMESTAMP(date,'MM/dd/yy'))) as complaint_date,Offence_Code,offence_des,offence_type,place,borough,x,y,round(cast(latitude as double),4) as latitude,round(cast(longitude as double),4) as longitude from crimes;
+
+
+//filter 311 calls to include only infrastructural related complaints
+create table calls311_3 as select Key,TO_DATE(from_unixtime(UNIX_TIMESTAMP(Created_Date,'MM/dd/yy'))) as created_date,TO_DATE(from_unixtime(UNIX_TIMESTAMP(Closed_Date,'MM/dd/yy'))) as closed_date,Agency,Complaint_Type,Address,Status,BBL,Borough,X,Y,round(Latitude,4) as latitude,round(Longitude,4) as longitude from calls311 where Complaint_Type IN ('Street Sign - Missing','Overflowing Recycling Baskets','Rodent','Overflowing Litter Baskets','Graffiti','Asbestos/Garbage Nuisance','Sidewalk Condition','Vacant Lot','Overgrown Tree/Branches','Sewer','Highway Sign - Dangling','Broken Muni Meter','Damaged or Dead Tree','Sweeping/Inadequate','Street Sign - Dangling','Derelict Bicycle','Root/Sewer/Sidewalk Condition','Derelict Vehicles','Bridge Condition','Hazardous Material','Industrial Waste','Street Condition','Highway Sign - Damaged','Dead/Dying Tree','Street Light Condition','Bike Rack Condition','Sweeping/Missed-Inadequate','Standing Water','Dirty Conditions','Highway Sign - Missing','Derelict Vehicle','Street Sign - Damaged','Curb Condition','Damaged Tree','Sanitation Condition','Litter Basket / Request','Highway Condition','Dead Tree','Unsanitary Pigeon Condition','Sweeping/Missed','Broken Parking Meter');
+
+//map 311 calls and crimes to street segments using spatial analysis tools
+create table latlong as select distinct latitude,longitude from crimes5;
+
+create table latlong8 as select distinct latitude,longitude from calls311_3;
+
+create table latlong5 as select concat(latitude,",",longitude) as latlongitude,st_geomfromtext(concat("Point(",longitude," ",latitude,")")) as ll from latlong;
+
+create table latlong9 as select concat(latitude,",",longitude) as latlongitude,st_geomfromtext(concat("Point(",longitude," ",latitude,")")) as ll from latlong8;
+
+create table centerline1 as select centerline.segmentid,st_geomfromtext(geometry) as geometry from centerline;
+
+create table crime_segments as select d.latlongitude,min(st_distance(c.geometry,d.ll)) as dis from latlong5 d,centerline1 c group by d.latlongitude;
+
+create table 311_segments_1 as select d.latlongitude,min(st_distance(c.geometry,d.ll)) as dis from latlong9 d,centerline1 c group by d.latlongitude;
+
+create table all_dis_segments as select c.segmentid,d.latlongitude,min(st_distance(c.geometry,d.ll)) as dis from latlong5 d,centerline1 c group by d.latlongitude,c.segmentid;
+
+create table all_311dis_segments_1 as select c.segmentid,d.latlongitude,min(st_distance(c.geometry,d.ll)) as dis from latlong9 d,centerline1 c group by d.latlongitude,c.segmentid;
+
+create table crime_mapped as select c.segmentid,d.latlongitude from crime_segments d join all_dis_segments c on (c.latlongitude = d.latlongitude AND c.dis = d.dis);
+
+create table 311_mapped_1 as select c.segmentid,d.latlongitude from 311_segments_1 d join all_311dis_segments_1 c on (c.latlongitude = d.latlongitude AND c.dis = d.dis);
+
+
+create table final_311_2 as select a.key,a.created_date,a.closed_date,datediff(cast(closed_date as string),cast(created_date as string)) as days_resolution,a.agency,a.complaint_type,a.address,a.status,a.bbl,a.borough,a.x,a.y,a.latitude,a.longitude,b.segmentid from calls311_3 a join 311_mapped_1 b on (concat(a.latitude,",",a.longitude) = b.latlongitude);
+
+create table final_crimes as select a.key,a.complaint_date,a.offence_code,a.offence_des,a.offence_type,a.place,a.borough,a.x,a.y,a.latitude,a.longitude,b.segmentid from crimes5 a join crime_mapped b on (concat(a.latitude,",",a.longitude) = b.latlongitude);
+
+hive -e 'select * from final_crimes' | sed 's/[\t]/|/g' > crimesfinaloutput.csv
+hive -e 'select * from final_311_2' | sed 's/[\t]/|/g' > 311finaloutput1.csv
